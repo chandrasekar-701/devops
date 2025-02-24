@@ -1,0 +1,269 @@
+Dockerfile
+
+Docker builds images by reading the instructions from a Dockerfile. A Dockerfile is a text file containing instructions for building your source code. The Dockerfile instruction syntax is defined by the specification reference in the Dockerfile reference.
+
+Here are the most common types of instructions:
+
+
+Dockerfile commands/Instructions
+1. FROM
+Represents the base image(OS), which is the command that is executed first before any other commands.
+Syntax
+
+FROM <ImageName> 
+
+
+Example: The base image will be ubuntu:19.04 Operating System.
+
+FROM ubuntu:19.04
+2. COPY
+The copy command is used to copy the file/folders to the image while building the image. 
+Syntax:
+
+COPY <Source>   <Destination>  
+
+
+Example: Copying the .war file to the Tomcat webapps directory
+
+COPY target/java-web-app.war  /usr/local/tomcat/webapps/java-web-app.war
+3. ADD
+While creating the image, we can download files from distant HTTP/HTTPS destinations using the ADD command.
+Syntax
+
+ADD <URL>  
+
+
+Example: Try to download Jenkins using ADD command 
+
+ADD https://get.jenkins.io/war/2.397/jenkins.war
+4. RUN
+Scripts and commands are run with the RUN instruction. The execution of RUN commands or instructions will take place while you create an image on top of the prior layers (Image).
+Syntax
+
+RUN < Command + ARGS> 
+
+
+Example
+
+RUN touch file
+5. CMD
+The main purpose of the CMD command is to start the process inside the container and it can be overridden.
+Syntax
+
+CMD [command + args] 
+
+
+Example: Starting Jenkins 
+
+CMD ["java","-jar", "Jenkins.war"]
+6. ENTRYPOINT
+A container that will function as an executable is configured by ENTRYPOINT. When you start the Docker container, a command or script called ENTRYPOINT is executed.
+It can’t be overridden.The only difference between CMD and ENTRYPOINT is CMD can be overridden and ENTRYPOINT can’t.
+Syntax
+
+
+ENTRYPOINT [command + args] 
+
+
+Example: Executing the echo command.
+
+ENTRYPOINT ["echo","Welcome to GFG"]
+7. MAINTAINER
+By using the MAINTAINER command we can identify the author/owner of the Dockerfile and we can set our own author/owner for the image.
+Syntax:
+
+MAINTAINER <NAME>
+
+
+Example: Setting the author for the image as a GFG author.
+
+MAINTAINER  GFG author 
+
+Instruction	Description
+FROM <image>	Defines a base for your image.
+RUN <command>	Executes any commands in a new layer on top of the current image and commits the result. RUN also has a shell form for running commands.
+WORKDIR <directory>	Sets the working directory for any RUN, CMD, ENTRYPOINT, COPY, and ADD instructions that follow it in the Dockerfile.
+COPY <src> <dest>	Copies new files or directories from <src> and adds them to the filesystem of the container at the path <dest>.
+CMD <command>	Lets you define the default program that is run once you start the container based on this image. Each Dockerfile only has one CMD, and only the last CMD instance is respected when multiple exist.
+
+
+Filename
+The default filename to use for a Dockerfile is Dockerfile, without a file extension. Using the default name allows you to run the docker build command without having to specify additional command flags.
+
+Some projects may need distinct Dockerfiles for specific purposes. A common convention is to name these <something>.Dockerfile. You can specify the Dockerfile filename using the --file flag for the docker build command. Refer to the docker build CLI reference to learn about the --file flag.
+
+Note
+
+We recommend using the default (Dockerfile) for your project's primary Dockerfile.
+
+Docker images
+Docker images consist of layers. Each layer is the result of a build instruction in the Dockerfile. Layers are stacked sequentially, and each one is a delta representing the changes applied to the previous layer.
+
+Example
+
+
+# Now remove all images. There're better ways to create custom images
+docker image rm $(docker image ls -aq)
+
+docker image ls
+
+mkdir myapache-dir
+
+cd myapache-dir
+
+vim Dockerfile
+FROM ubuntu:18.04
+RUN  apt-get update
+RUN  apt-get install -y apache2 curl net-tools
+ENTRYPOINT apachectl -D FOREGROUND
+
+docker build -t myapache .
+
+docker run -itd -p 80:80 --name a1 myapache
+
+curl localhost:80
+
+vim Dockerfile
+FROM ubuntu:18.04
+RUN  apt-get update
+RUN  apt-get install -y apache2 curl net-tools
+RUN  echo 'Hello World' > /var/www/html/index.html
+ENTRYPOINT apachectl -D FOREGROUND
+
+docker build -t myapache .
+
+docker image ls
+
+docker rm -f a1
+
+docker run -itd -p 80:80 --name a1 myapache
+curl localhost:80
+
+
+vim Dockerfile
+FROM ubuntu:18.04
+RUN  apt-get update
+RUN  apt-get install -y apache2 curl net-tools
+COPY ./index.html /var/www/html/index.html
+ENTRYPOINT apachectl -D FOREGROUND
+
+vim index.html
+Hello World
+
+docker build -t myapache .
+
+docker rm -f a1
+docker run -itd -p 80:80 --name a1 myapache
+curl localhost:80
+
+vim Dockerfile
+FROM ubuntu:18.04
+LABEL name=apache maintainer=YOUR_NAME
+ENV HELLO="WORLD"
+RUN  apt-get update && apt-get install -y apache2 curl net-tools
+COPY ./index.html /var/www/html/index.html
+ENTRYPOINT apachectl -D FOREGROUND
+EXPOSE 80
+
+docker build -t myapache .
+
+docker image inspect myapache
+
+docker run -itd --name a3 myapache
+
+docker exec -it a3 bash
+echo $HELLO
+exit
+
+
+[root@server myapache-dir]# docker run -itd --name a4 -e HELLO=YOURNAME -e TEST=yes myapache
+b092045afd401d7d7ad4c046f8588e3ef72b91f56f3991027fe6049fec588cdc
+[root@server myapache-dir]# docker exec -it a4 bash                root@b092045afd40:/# echo $HELLO
+YOURNAME
+root@b092045afd40:/# echo $TEST
+yes
+
+# Diff btween cmd and entrypoint 
+
+# cat dockerfile
+
+FROM centos
+
+CMD ["echo", "Hello from CMD"]
+
+
+
+# docker build -t hello .
+[+] Building 6.2s (5/5) FINISHED                    docker:default
+ => [internal] load build definition from dockerfile          0.0s
+ => => transferring dockerfile: 82B                           0.0s
+ => [internal] load metadata for docker.io/library/centos:la  0.3s
+ => [internal] load .dockerignore                             0.0s
+ => => transferring context: 2B                               0.0s
+ => [1/1] FROM docker.io/library/centos:latest@sha256:a27fd8  5.8s
+ => => resolve docker.io/library/centos:latest@sha256:a27fd8  0.0s
+ => => sha256:a1801b843b1bfaf77c501e7a6d3f709401 529B / 529B  0.0s
+ => => sha256:5d0da3dc976460b72c77d94c8a1ad0 2.14kB / 2.14kB  0.0s
+ => => sha256:a1d0c75327776413fa0db9ed3adc 83.52MB / 83.52MB  1.2s
+ => => sha256:a27fd8080b517143cbbbab9dfb7c8571c4 762B / 762B  0.0s
+ => => extracting sha256:a1d0c75327776413fa0db9ed3adcdbadedc  4.4s
+ => exporting to image                                        0.0s
+ => => exporting layers                                       0.0s
+ => => writing image sha256:ae13110aaaf296774fec6ec1e44841a2  0.0s
+ => => naming to docker.io/library/hello                      0.0s
+
+[root@server myapache-dir]# docker image ls
+REPOSITORY   TAG       IMAGE ID       CREATED         SIZE
+myapache     latest    1d63ca04e4a3   9 minutes ago   210MB
+<none>       <none>    2f1d13401a91   3 days ago      210MB
+<none>       <none>    daa4dac26e33   3 days ago      210MB
+<none>       <none>    d800c03aff1a   3 days ago      210MB
+hello        latest    ae13110aaaf2   3 years ago     231MB
+
+
+[root@server myapache-dir]# docker run hello
+Hello from CMD
+
+[root@server myapache-dir]# docker run hello hostname
+332e89a48d47
+
+
+# cat dockerfile
+
+FROM centos
+
+ENTRYPOINT ["echo", "Hello from CMD"]
+
+
+# docker build -t hello .
+[+] Building 0.2s (5/5) FINISHED                    docker:default
+ => [internal] load build definition from dockerfile          0.0s
+ => => transferring dockerfile: 89B                           0.0s
+ => [internal] load metadata for docker.io/library/centos:la  0.1s
+ => [internal] load .dockerignore                             0.0s
+ => => transferring context: 2B                               0.0s
+ => CACHED [1/1] FROM docker.io/library/centos:latest@sha256  0.0s
+ => exporting to image                                        0.0s
+ => => exporting layers                                       0.0s
+ => => writing image sha256:99a6fc951872b6950cbcb777ec53a013  0.0s
+ => => naming to docker.io/library/hello                      0.0s
+[root@server myapache-dir]#
+
+
+# docker image ls
+REPOSITORY   TAG       IMAGE ID       CREATED          SIZE
+myapache     latest    1d63ca04e4a3   13 minutes ago   210MB
+<none>       <none>    2f1d13401a91   3 days ago       210MB
+<none>       <none>    daa4dac26e33   3 days ago       210MB
+<none>       <none>    d800c03aff1a   3 days ago       210MB
+hello        latest    99a6fc951872   3 years ago      231MB
+<none>       <none>    ae13110aaaf2   3 years ago      231MB
+[root@server myapache-dir]#
+
+[root@server myapache-dir]# docker run hello
+Hello from CMD
+
+
+# docker run hello hostname
+Hello from CMD hostname
+
